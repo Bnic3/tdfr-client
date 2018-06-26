@@ -1,68 +1,80 @@
 import React, { Component } from 'react';
 import logo from '../logo.svg';
-import axios from 'axios';
+
 import busy from '../img/giphy.gif';
 import '../App.css';
+
+import {connect}  from "react-redux";
+
+import Validator from "validator";
+import  isEmpty from "lodash/isEmpty";
+import PropTypes from "prop-types";
+
+
+
+import { login, logintimeout, toggleState } from './../actions/loginAction';
+
 
 
 class Login extends Component {
 
   constructor(props){
     super(props);
-
-     this.state = {cursor:false};
-
-    this.onFormSubmit = this.onFormSubmit.bind(this);
+     this.state = {username: "",
+                   password:"",
+                  cursor: false};
+    //this.onFormSubmit = this.onFormSubmit.bind(this);
   }
+
+  validateFormInput=(data)=>{
+    const errors = {};
+    if(Validator.isEmpty(data.username)){
+      errors.username = "This field is required";
+    }
+    if(Validator.isEmpty(data.password)){
+      errors.password = "This field is required";
+    }
+
+    return {
+      errors,
+      isValid: isEmpty(errors)
+    }
+
+  }  
   
-  onFormSubmit(e){
+   onFormSubmit= async (e)=>{
     e.preventDefault();
-    console.log("attempting to log in ")
+
+    const {username, password} = this.state;
+    console.log(`attempting to log in with ${username} and ${password}`)
     
-    var username= this.refs.username.value;
-    var password= this.refs.password.value;
-    if(username.value !== "" && password.value!==""){
-      this.toggleState();
-      axios.post('http://localhost:3001/users/login',{username,password})
-      .then(response=>{
-        this.toggleState();
-        console.log(response.data.success);
-
-        
-      })
-      .catch(e=>{
-        console.log(e)
-        this.toggleState();}); 
-
-      // this.setState(()=>{
-      //   return {cursor:true}
-      // })
-
-
-      
-      console.log(this.state);
+    const {errors, isValid} = this.validateFormInput(this.state)
+    console.log("errors" +errors)
+    console.log("cursot "+ this.state.cursor)
+   
+    if(isValid){  
+      this.setState({ cursor:true  });
+    const cursor = await this.props.login(this.state)
+    this.setState({cursor});
     } 
 
-  }//
+  }
+  
+  formHandler = (e)=>{
+    this.setState({[e.target.name]: e.target.value}) 
+  }
 
-  toggleState(){
+  
 
-    this.setState((prevState)=>{
-      return {...prevState,
-        cursor:!prevState.cursor}
-    })
-  }; //end toggle
   render() {
-    var a = this.state;
-     console.log(a);
+
     return (
       <div className="App">
-
+        
       <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
           <h1 className="App-title">Welcome to Fantasia</h1>
-        </header>
-             
+        </header>             
 
       <div className="container">
         <div className="row">
@@ -71,16 +83,16 @@ class Login extends Component {
             <div className= "form-div">
                 <form onSubmit={this.onFormSubmit}>
                     <div className="form-group">
-                    <input ref= 'username' type="text" className="form-control" id="username" aria-describedby="emailHelp" placeholder="Enter email"/>
+                    <input name= 'username' value = {this.state.username} onChange = {this.formHandler}
+                    type="text" className="form-control" aria-describedby="emailHelp" placeholder="Enter username"/>
                      </div>
               
-                    <div className="form-group">
-                      
-                        <input ref='password'   type="password" className="form-control" id="exampleInputPassword1" placeholder="Password"/>
+                    <div className="form-group">                      
+                        <input name='password'   value = {this.state.password} onChange = {this.formHandler}
+                        type="password" className="form-control" id="exampleInputPassword1" placeholder="Password"/>
                     </div>
                     {this.state.cursor ? <img src={busy}/> : <button type= "submit" className="button btn-primary btn">Submit</button>  }
-                                     
-                                   
+                                 
             
                 </form>
              </div>
@@ -91,14 +103,21 @@ class Login extends Component {
         </div>
       
       </div> 
-
-      
+  
         
       </div>
     );
   }
 }
+Login.propTypes = {
+  login: PropTypes.func.isRequired
+}
 
-export default Login;
+const mapDispatchToProps= (dispatch)=>({
+dispatch,
+login
+})
+ 
 
 
+export default connect(undefined,{login})(Login);
